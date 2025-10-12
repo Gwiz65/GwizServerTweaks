@@ -15,6 +15,8 @@ import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.players.Player;
 import com.wurmonline.server.questions.InspectQuestion;
+import com.wurmonline.server.skills.NoSuchSkillException;
+import com.wurmonline.server.skills.Skill;
 import com.wurmonline.shared.util.StringUtilities;
 
 public class InspectAction implements ActionPerformer, BehaviourProvider, ModAction {
@@ -63,7 +65,18 @@ public class InspectAction implements ActionPerformer, BehaviourProvider, ModAct
 	@Override
 	public List<ActionEntry> getBehavioursFor(Creature performer, Creature target) {
 		if (performer instanceof Player && target != null && target.isAnimal()) {
-			return Arrays.asList(actionEntry);
+			try {
+				Skill breeding;
+				breeding = performer.getSkills().getSkill(10085);
+				final double knowledge = breeding.getKnowledge(0.0);
+				if (knowledge > 20.0) {
+					return Arrays.asList(actionEntry);
+				} else {
+					return null;
+				}
+			} catch (NoSuchSkillException e) {
+				return null;
+			}
 		} else {
 			return null;
 		}

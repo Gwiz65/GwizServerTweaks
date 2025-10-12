@@ -1,5 +1,7 @@
 package com.wurmonline.server.questions;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import com.wurmonline.server.LoginHandler;
@@ -153,21 +155,21 @@ public final class InspectQuestion extends Question {
 
 		String motherfather = "";
 		if (inspectTarget.getMother() != -10L) {
+			Creature mother;
 			try {
-				final Creature mother = Server.getInstance().getCreature(inspectTarget.getMother());
+				mother = Server.getInstance().getCreature(inspectTarget.getMother());
 				motherfather = motherfather + StringUtilities.raiseFirstLetter(inspectTarget.getHisHerItsString())
 						+ " mother is " + mother.getNameWithGenus() + ". ";
-			} catch (NoSuchCreatureException nce) {
-			} catch (NoSuchPlayerException nspe) {
+			} catch (NoSuchPlayerException | NoSuchCreatureException e) {
 			}
 		}
 		if (inspectTarget.getFather() != -10L) {
+			Creature father;
 			try {
-				final Creature father = Server.getInstance().getCreature(inspectTarget.getFather());
+				father = Server.getInstance().getCreature(inspectTarget.getFather());
 				motherfather = motherfather + StringUtilities.raiseFirstLetter(inspectTarget.getHisHerItsString())
 						+ " father is " + father.getNameWithGenus() + ". ";
-			} catch (NoSuchCreatureException nce) {
-			} catch (NoSuchPlayerException nspe) {
+			} catch (NoSuchPlayerException | NoSuchCreatureException e) {
 			}
 		}
 		if (motherfather.length() > 0) {
@@ -176,9 +178,45 @@ public final class InspectQuestion extends Question {
 			questionString.append("text{text='No family information for this animal'}");
 		}
 
+		if (inspectTarget.hasTraits()) {
+			List<Integer> traitArrayList = new ArrayList<>();
+			for (int x = 0; x < 64; ++x) {
+				if (inspectTarget.hasTrait(x) && this.isActualTrait(x)) {
+					traitArrayList.add(x);
+				}
+			}
+
+			questionString.append("text{text='" + traitArrayList.toString() + "'}");
+			for (int id : traitArrayList) {
+				questionString.append(
+						"text{text='" + id + "  " + this.getPosNegString(id) + "  " + Traits.getTraitString(id) + "'}");
+			}
+		}
+
 		questionString.append("text{text=''}");
 		questionString.append(this.createAnswerButton2("Close"));
 		this.getResponder().getCommunicator().sendBml(600, 400, true, true, questionString.toString(), 200, 200, 200,
 				this.title);
+	}
+
+	private boolean isActualTrait(int t) {
+		// these are colors so ignore
+		// 15 16 17 18 23 24 25 30 31 32 33 34
+		// 63 is captivity trait
+		if (t != 15 && t != 16 && t != 17 && t != 18 && t != 23 && t != 24 && t != 15 && t != 25 && t != 30 && t != 31
+				&& t != 32 && t != 33 && t != 34 && t != 63) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private String getPosNegString(int t) {
+		String retString = "Positive";
+		if (Traits.isTraitNegative(t))
+			retString = "Negative";
+		if (Traits.isTraitNeutral(t))
+			retString = "Neutral";
+		return retString;
 	}
 }
