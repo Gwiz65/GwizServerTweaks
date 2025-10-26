@@ -34,11 +34,8 @@ import java.util.logging.Logger;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 import org.gotti.wurmunlimited.modloader.interfaces.Configurable;
 import org.gotti.wurmunlimited.modloader.interfaces.PreInitable;
-import org.gotti.wurmunlimited.modloader.interfaces.ServerStartedListener;
 import org.gotti.wurmunlimited.modloader.interfaces.Versioned;
 import org.gotti.wurmunlimited.modloader.interfaces.WurmServerMod;
-import org.gotti.wurmunlimited.modsupport.actions.ModActions;
-
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -46,17 +43,15 @@ import javassist.NotFoundException;
 import javassist.expr.ExprEditor;
 import javassist.expr.MethodCall;
 
-public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned, ServerStartedListener {
+public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned {
 
-	private static final String version = "0.62";
+	private static final String version = "0.65";
 	private static Logger logger = Logger.getLogger(GwizServerTweaks.class.getName());
 	private static boolean allowInterfaithLink = true;
-	private static boolean addInspectAction = true;
 
 	@Override
 	public void configure(Properties properties) {
 		allowInterfaithLink = Boolean.parseBoolean(properties.getProperty("allowInterfaithLink", "true"));
-		addInspectAction = Boolean.parseBoolean(properties.getProperty("addInspectAction", "true"));
 	}
 
 	@Override
@@ -67,8 +62,6 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 	@Override
 	public void preInit() {
 		ClassPool hookClassPool = HookManager.getInstance().getClassPool();
-		if (addInspectAction)
-			ModActions.init();
 
 		// Allow inter-faith priest linking
 		if (allowInterfaithLink) {
@@ -86,14 +79,6 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 			} catch (NotFoundException | CannotCompileException e) {
 				logger.log(Level.WARNING, "Something went horribly wrong when allowing inter-faith linking!", e);
 			}
-		}
-	}
-
-	@Override
-	public void onServerStarted() {
-		if (addInspectAction) {
-			ModActions.registerAction(new InspectAction());
-			logger.log(Level.INFO, "Inspect animal action has been registered.");
 		}
 	}
 
