@@ -12,3 +12,4 @@ Some Wurm Unlimited server tweaks - mostly focused on improving solo gameplay.
 
 - **ToDo List**
   - Add bank functions to soulfall stones
+  - Multiple deeds & deed book to hold them
