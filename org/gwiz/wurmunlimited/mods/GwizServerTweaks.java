@@ -46,7 +46,7 @@ import javassist.expr.MethodCall;
 
 public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned {
 
-	private static final String version = "0.70";
+	private static final String version = "0.71";
 	private static Logger logger = Logger.getLogger(GwizServerTweaks.class.getName());
 	private static boolean allowInterfaithLink = true;
 	private static boolean spiritGuardsTargetUniques = true;
@@ -94,8 +94,6 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 				ctVillage.getDeclaredMethod("isEnemy", new CtClass[] {
 						hookClassPool.getCtClass("com.wurmonline.server.creatures.Creature"), CtClass.booleanType })
 						.instrument(new ExprEditor() {
-
-							@Override
 							public void edit(MethodCall methodCall) throws CannotCompileException {
 								if (methodCall.getMethodName().equals("isUnique")) {
 									methodCall.replace("{ $_ = false; }");
@@ -106,7 +104,6 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 						.getDeclaredMethod("addTarget",
 								new CtClass[] { hookClassPool.getCtClass("com.wurmonline.server.creatures.Creature") })
 						.instrument(new ExprEditor() {
-							@Override
 							public void edit(MethodCall methodCall) throws CannotCompileException {
 								if (methodCall.getMethodName().equals("isUnique")) {
 									methodCall.replace("{ $_ = false; }");
@@ -127,7 +124,6 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 						.getDeclaredMethod("alertGuards",
 								new CtClass[] { hookClassPool.getCtClass("com.wurmonline.server.creatures.Creature") })
 						.instrument(new ExprEditor() {
-							@Override
 							public void edit(MethodCall methodCall) throws CannotCompileException {
 								if (methodCall.getMethodName().equals("getAttitude")) {
 									methodCall.replace("{ if ($0.isUnique()) $_ = 2; else $_ = $proceed($$); }");
