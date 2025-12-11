@@ -34,8 +34,10 @@ import java.util.logging.Logger;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 import org.gotti.wurmunlimited.modloader.interfaces.Configurable;
 import org.gotti.wurmunlimited.modloader.interfaces.PreInitable;
+import org.gotti.wurmunlimited.modloader.interfaces.ServerStartedListener;
 import org.gotti.wurmunlimited.modloader.interfaces.Versioned;
 import org.gotti.wurmunlimited.modloader.interfaces.WurmServerMod;
+import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 
 import javassist.CannotCompileException;
 import javassist.ClassPool;
@@ -44,19 +46,23 @@ import javassist.NotFoundException;
 import javassist.expr.ExprEditor;
 import javassist.expr.MethodCall;
 
-public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned {
+public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned, ServerStartedListener {
 
-	private static final String version = "0.71";
+	private static final String version = "0.76";
 	private static Logger logger = Logger.getLogger(GwizServerTweaks.class.getName());
 	private static boolean allowInterfaithLink = true;
 	private static boolean spiritGuardsTargetUniques = true;
 	private static boolean towerGuardsTargetUniques = true;
+	private static boolean addDepositCoinAction = true;
+	private static boolean addInspectAnimalAction= true;
 
 	@Override
 	public void configure(Properties properties) {
 		allowInterfaithLink = Boolean.parseBoolean(properties.getProperty("allowInterfaithLink", "true"));
 		spiritGuardsTargetUniques = Boolean.parseBoolean(properties.getProperty("spiritGuardsTargetUniques", "true"));
 		towerGuardsTargetUniques = Boolean.parseBoolean(properties.getProperty("towerGuardsTargetUniques", "true"));
+		addDepositCoinAction = Boolean.parseBoolean(properties.getProperty("addDepositCoinAction", "true"));
+		addInspectAnimalAction = Boolean.parseBoolean(properties.getProperty("addInspectAnimalAction", "true"));
 	}
 
 	@Override
@@ -66,7 +72,13 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 
 	@Override
 	public void preInit() {
+
 		ClassPool hookClassPool = HookManager.getInstance().getClassPool();
+
+		// init ModActions if needed
+		if (addDepositCoinAction || addInspectAnimalAction) {
+			ModActions.init();
+		}
 
 		// Allow inter-faith priest linking
 		if (allowInterfaithLink) {
@@ -94,6 +106,7 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 				ctVillage.getDeclaredMethod("isEnemy", new CtClass[] {
 						hookClassPool.getCtClass("com.wurmonline.server.creatures.Creature"), CtClass.booleanType })
 						.instrument(new ExprEditor() {
+							@Override
 							public void edit(MethodCall methodCall) throws CannotCompileException {
 								if (methodCall.getMethodName().equals("isUnique")) {
 									methodCall.replace("{ $_ = false; }");
@@ -104,6 +117,7 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 						.getDeclaredMethod("addTarget",
 								new CtClass[] { hookClassPool.getCtClass("com.wurmonline.server.creatures.Creature") })
 						.instrument(new ExprEditor() {
+							@Override
 							public void edit(MethodCall methodCall) throws CannotCompileException {
 								if (methodCall.getMethodName().equals("isUnique")) {
 									methodCall.replace("{ $_ = false; }");
@@ -124,6 +138,7 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 						.getDeclaredMethod("alertGuards",
 								new CtClass[] { hookClassPool.getCtClass("com.wurmonline.server.creatures.Creature") })
 						.instrument(new ExprEditor() {
+							@Override
 							public void edit(MethodCall methodCall) throws CannotCompileException {
 								if (methodCall.getMethodName().equals("getAttitude")) {
 									methodCall.replace("{ if ($0.isUnique()) $_ = 2; else $_ = $proceed($$); }");
@@ -135,5 +150,21 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 				logger.log(Level.WARNING, "Something went horribly wrong allowing tower guards to target uniques!", e);
 			}
 		}
+	}
+
+	@Override
+	public void onServerStarted() {
+
+		// add deposit coin action
+		if (addDepositCoinAction) {
+			ModActions.registerAction(new DepositCoinAction());
+			logger.log(Level.INFO, "Deposit coin action has been registered.");
+		}
+		// add inspect animal action
+		if (addInspectAnimalAction) {
+			ModActions.registerAction(new InspectAnimalAction());
+			logger.log(Level.INFO, "Inspect animal action has been registered.");
+		}
+
 	}
 }
