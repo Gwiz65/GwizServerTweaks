@@ -9,7 +9,8 @@ Some Wurm Unlimited server tweaks - mostly focused on improving solo gameplay.
   - Allow inter-faith priest linking
   - Make spirit guards attack unique creatures
   - Make tower guards attack unique creatures
+  - Deposit coins directly into bank from inventory
+  - Inspect Animal dialog at AH20
 
 - **ToDo List**
-  - Add bank functions to soulfall stones
   - Multiple deeds & deed book to hold them
