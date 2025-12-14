@@ -44,6 +44,7 @@ import com.wurmonline.server.economy.Change;
 import com.wurmonline.server.economy.Economy;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.players.Player;
+import com.wurmonline.shared.util.MaterialUtilities;
 
 public class DepositCoinAction implements ActionPerformer, BehaviourProvider, ModAction {
 
@@ -63,11 +64,14 @@ public class DepositCoinAction implements ActionPerformer, BehaviourProvider, Mo
 			try {
 				player.addMoney(target.getValue());
 			} catch (IOException e) {
-				player.getCommunicator().sendNormalServerMessage("Unable to deposit a " + target.getActualName() + ".");
+				player.getCommunicator().sendNormalServerMessage("Unable to deposit a "
+						+ MaterialUtilities.getMaterialString(target.getMaterial()) + " " + target.getName() + ".");
 				return true;
 			}
+			target.setBanked(true);
 			Economy.getEconomy().returnCoin(target, "Banked");
-			player.getCommunicator().sendNormalServerMessage("You deposit a " + target.getActualName() + ".");
+			player.getCommunicator().sendNormalServerMessage("You deposit a "
+					+ MaterialUtilities.getMaterialString(target.getMaterial()) + " " + target.getName() + ".");
 			final Change change = Economy.getEconomy().getChangeFor(player.getMoney());
 			player.getCommunicator()
 					.sendNormalServerMessage("You now have " + change.getChangeString() + " in your bank account.");
