@@ -37,10 +37,10 @@ import org.gotti.wurmunlimited.modsupport.actions.BehaviourProvider;
 import org.gotti.wurmunlimited.modsupport.actions.ModAction;
 import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 
+import com.wurmonline.server.NoSuchItemException;
 import com.wurmonline.server.behaviours.Action;
 import com.wurmonline.server.behaviours.ActionEntry;
 import com.wurmonline.server.creatures.Creature;
-import com.wurmonline.server.economy.Change;
 import com.wurmonline.server.economy.Economy;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.players.Player;
@@ -62,19 +62,23 @@ public class DepositCoinAction implements ActionPerformer, BehaviourProvider, Mo
 		if (target.isCoin()) {
 			final Player player = (Player) performer;
 			try {
+				target.getParent().dropItem(target.getWurmId(), false);
+				Economy.getEconomy().returnCoin(target, "Banked");
 				player.addMoney(target.getValue());
-			} catch (IOException e) {
-				player.getCommunicator().sendNormalServerMessage("Unable to deposit a "
-						+ MaterialUtilities.getMaterialString(target.getMaterial()) + " " + target.getName() + ".");
-				return true;
+				player.getCommunicator().sendNormalServerMessage(
+						"You deposit a " + MaterialUtilities.getMaterialString(target.getMaterial()) + " "
+								+ target.getName() + " into your bank account.");
+				player.getCommunicator().sendNormalServerMessage(
+						"New balance: " + (Economy.getEconomy().getChangeFor(player.getMoney())).getChangeString());
+			} catch (IOException | NoSuchItemException e) {
+				if (target.isBanked()) {
+					Item newCoin = Economy.getEconomy().getCoinsFor(target.getValue())[0];
+					player.getInventory().insertItem(newCoin);
+				}
+				player.getCommunicator().sendNormalServerMessage(
+						"Unable to deposit a " + MaterialUtilities.getMaterialString(target.getMaterial()) + " "
+								+ target.getName() + " into your bank account.");
 			}
-			target.setBanked(true);
-			Economy.getEconomy().returnCoin(target, "Banked");
-			player.getCommunicator().sendNormalServerMessage("You deposit a "
-					+ MaterialUtilities.getMaterialString(target.getMaterial()) + " " + target.getName() + ".");
-			final Change change = Economy.getEconomy().getChangeFor(player.getMoney());
-			player.getCommunicator()
-					.sendNormalServerMessage("You now have " + change.getChangeString() + " in your bank account.");
 		}
 		return true;
 	}
@@ -82,6 +86,7 @@ public class DepositCoinAction implements ActionPerformer, BehaviourProvider, Mo
 	@Override
 	public List<ActionEntry> getBehavioursFor(Creature performer, Item target) {
 		if (performer instanceof Player && target != null && target.isCoin()) {
+			// performer.getCommunicator().sendUpdateInventoryItem(target);
 			for (Item item : performer.getAllItems()) {
 				if (item.getWurmId() == target.getWurmId()) {
 					return Arrays.asList(actionEntry);
