@@ -174,6 +174,8 @@ public final class InspectQuestion extends Question {
 				questionString.append(bmlLabel(StringUtilities.raiseFirstLetter(inspectTarget.getHisHerItsString())
 						+ " mother is " + mother.getNameWithGenus() + "."));
 			} catch (NoSuchPlayerException | NoSuchCreatureException e) {
+				questionString.append(bmlLabel(
+						StringUtilities.raiseFirstLetter(inspectTarget.getHisHerItsString()) + " mother is unknown."));
 			}
 		} else {
 			questionString.append(bmlLabel(
@@ -186,6 +188,8 @@ public final class InspectQuestion extends Question {
 				questionString.append(bmlLabel(StringUtilities.raiseFirstLetter(inspectTarget.getHisHerItsString())
 						+ " father is " + father.getNameWithGenus() + "."));
 			} catch (NoSuchPlayerException | NoSuchCreatureException e) {
+				questionString.append(bmlLabel(
+						StringUtilities.raiseFirstLetter(inspectTarget.getHisHerItsString()) + " father is unknown."));
 			}
 		} else {
 			questionString.append(bmlLabel(

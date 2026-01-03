@@ -48,7 +48,7 @@ import javassist.expr.MethodCall;
 
 public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned, ServerStartedListener {
 
-	private static final String version = "0.80";
+	private static final String version = "0.81";
 	private static Logger logger = Logger.getLogger(GwizServerTweaks.class.getName());
 	private static boolean allowInterfaithLink = true;
 	private static boolean spiritGuardsTargetUniques = true;
