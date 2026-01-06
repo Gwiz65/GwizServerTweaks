@@ -27,9 +27,14 @@
 
 package org.gwiz.wurmunlimited.mods;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modsupport.actions.ActionEntryBuilder;
 import org.gotti.wurmunlimited.modsupport.actions.ActionPerformer;
 import org.gotti.wurmunlimited.modsupport.actions.BehaviourProvider;
@@ -48,12 +53,23 @@ import com.wurmonline.shared.util.StringUtilities;
 
 public class InspectAnimalAction implements ActionPerformer, BehaviourProvider, ModAction {
 
+	private static Logger logger = Logger.getLogger(InspectAnimalAction.class.getName());
 	private final short actionId;
-	private final ActionEntry actionEntry;
+	private ActionEntry actionEntry = null;
 
 	public InspectAnimalAction() {
 		actionId = (short) ModActions.getNextActionId();
-		actionEntry = new ActionEntryBuilder(actionId, "Inspect animal", "inspecting").build();
+		try {
+			Constructor<?> constructor = (Class
+					.forName("org.gotti.wurmunlimited.modsupport.actions.ActionEntryBuilder"))
+					.getDeclaredConstructor(short.class, int.class, String.class, String.class, String.class,
+							int[].class, int.class, boolean.class);
+			actionEntry = ((ActionEntryBuilder) ReflectionUtil.callPrivateConstructor(constructor, actionId, 5,
+					"Inspect animal", "inspecting", "Inspect animal", new int[] { 0, 25, 29, 37 }, 4, false)).build();
+		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException
+				| IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			logger.log(Level.WARNING, "Action entry creation failed!", e);
+		}
 		ModActions.registerAction(actionEntry);
 	}
 
