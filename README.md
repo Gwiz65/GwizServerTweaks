@@ -14,3 +14,5 @@ Some Wurm Unlimited server tweaks - mostly focused on improving solo gameplay.
 
 - **ToDo List**
   - Multiple deeds & deed book to hold them
+  - No Snow
+  
