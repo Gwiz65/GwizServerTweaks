@@ -48,13 +48,13 @@ import javassist.expr.MethodCall;
 
 public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned, ServerStartedListener {
 
-	private static final String version = "0.83";
+	private static final String version = "0.84";
 	private static Logger logger = Logger.getLogger(GwizServerTweaks.class.getName());
 	private static boolean allowInterfaithLink = true;
 	private static boolean spiritGuardsTargetUniques = true;
 	private static boolean towerGuardsTargetUniques = true;
 	private static boolean addDepositCoinAction = true;
-	private static boolean addInspectAnimalAction= true;
+	private static boolean addInspectAnimalAction = true;
 
 	@Override
 	public void configure(Properties properties) {
@@ -148,6 +148,26 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 				logger.log(Level.INFO, "Tower guards will now attack unique creatures.");
 			} catch (NotFoundException | CannotCompileException e) {
 				logger.log(Level.WARNING, "Something went horribly wrong allowing tower guards to target uniques!", e);
+			}
+		}
+
+		// force update on awarded coins
+		if (addDepositCoinAction) {
+			try {
+				CtClass ctPlayer = hookClassPool.getCtClass("com.wurmonline.server.players.Player");
+				ctPlayer.getDeclaredMethod("checkCoinAward", new CtClass[] { CtClass.intType })
+						.instrument(new ExprEditor() {
+							@Override
+							public void edit(MethodCall methodCall) throws CannotCompileException {
+								if (methodCall.getMethodName().equals("setMoney")) {
+									methodCall.replace("{ this.getCommunicator().sendUpdateInventoryItem(coinItem);  "
+											+ "$_ = $proceed($$); }");
+								}
+							}
+						});
+				logger.log(Level.INFO, "Coin action bugfix applied.");
+			} catch (NotFoundException | CannotCompileException e) {
+				logger.log(Level.WARNING, "Something went horribly wrong fixing coin bug!", e);
 			}
 		}
 	}
