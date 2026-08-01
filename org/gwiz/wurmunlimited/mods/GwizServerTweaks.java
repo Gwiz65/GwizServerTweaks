@@ -169,7 +169,7 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 								if (methodCall.getMethodName().equals("firePlayerTrigger")) {
 									methodCall.replace(
 											"{ com.wurmonline.server.creatures.Creature performer = com.wurmonline.server."
-													+ "Players.getInstance().getPlayer($1); if (performer.checkCoinAward(1)) "
+													+ "Players.getInstance().getPlayer($1); if (performer.checkCoinAward(100)) "
 													+ "{ performer.getCommunicator().sendSafeServerMessage(\"You also find a "
 													+ "rare coin!\"); } $_ = $proceed($$); }");
 								}
