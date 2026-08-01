@@ -149,7 +149,7 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 						});
 				logger.log(Level.INFO, "Tower guards will now attack unique creatures.");
 			} catch (NotFoundException | CannotCompileException e) {
-
+				logger.log(Level.WARNING, "Something went horribly wrong allowing tower guards to target uniques!", e);
 			}
 		}
 
