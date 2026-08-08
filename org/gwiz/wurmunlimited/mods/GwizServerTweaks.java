@@ -42,13 +42,16 @@ import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtField;
+import javassist.CtMethod;
+import javassist.CtNewMethod;
 import javassist.NotFoundException;
 import javassist.expr.ExprEditor;
 import javassist.expr.MethodCall;
 
 public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitable, Versioned, ServerStartedListener {
 
-	private static final String version = "0.87";
+	private static final String version = "0.91";
 	private static Logger logger = Logger.getLogger(GwizServerTweaks.class.getName());
 	private static boolean allowInterfaithLink = true;
 	private static boolean spiritGuardsTargetUniques = true;
@@ -56,6 +59,7 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 	private static boolean addDepositCoinAction = true;
 	private static boolean addInspectAnimalAction = true;
 	private static boolean addCoinsWhileDigging = true;
+	private static int groomActionsPerAnimal = 10;
 
 	@Override
 	public void configure(Properties properties) {
@@ -65,6 +69,7 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 		addDepositCoinAction = Boolean.parseBoolean(properties.getProperty("addDepositCoinAction", "true"));
 		addInspectAnimalAction = Boolean.parseBoolean(properties.getProperty("addInspectAnimalAction", "true"));
 		addCoinsWhileDigging = Boolean.parseBoolean(properties.getProperty("addCoinsWhileDigging", "true"));
+		groomActionsPerAnimal = Integer.parseInt(properties.getProperty("groomActionsPerAnimal", "10"));
 	}
 
 	@Override
@@ -178,6 +183,56 @@ public class GwizServerTweaks implements WurmServerMod, Configurable, PreInitabl
 				logger.log(Level.INFO, "Coins will be awarded when digging");
 			} catch (NotFoundException | CannotCompileException e) {
 				logger.log(Level.WARNING, "Something went horribly wrong allowing adding coins to digging!", e);
+			}
+		}
+
+		// multiple groom actions per animal
+		if (groomActionsPerAnimal != 0) {
+			try {
+
+				CtClass ctCreature = hookClassPool.getCtClass("com.wurmonline.server.creatures.Creature");
+				ctCreature.addField(new CtField(CtClass.longType, "lastGroomedBy", ctCreature), "0L");
+				ctCreature.addMethod(
+						CtNewMethod.make("public long getlastGroomedBy() { return this.lastGroomedBy; }", ctCreature));
+				ctCreature.addMethod(CtNewMethod.make(
+						"public void setLastGroomedBy(long newLastGroomedBy) { this.lastGroomedBy = newLastGroomedBy; }",
+						ctCreature));
+				ctCreature.addField(new CtField(CtClass.intType, "groomCount", ctCreature), "0");
+				ctCreature.addMethod(
+						CtNewMethod.make("public int getGroomCount() { return this.groomCount; }", ctCreature));
+				ctCreature.addMethod(CtNewMethod.make(
+						"public void setGroomCount(int newGroomCount) { this.groomCount = newGroomCount; }",
+						ctCreature));
+				ctCreature.addField(new CtField(CtClass.longType, "savedLastGroomed", ctCreature), "0L");
+				ctCreature.addMethod(CtNewMethod
+						.make("public long getSavedLastGroomed() { return this.savedLastGroomed; }", ctCreature));
+				ctCreature.addMethod(CtNewMethod.make("public void setSavedLastGroomed(long newSavedLastGroomed) "
+						+ "{ this.savedLastGroomed = newSavedLastGroomed; }", ctCreature));
+				CtMethod ctMethodGroom = hookClassPool.getCtClass("com.wurmonline.server.behaviours.MethodsCreatures")
+						.getDeclaredMethod("groom",
+								new CtClass[] { ctCreature, ctCreature,
+										hookClassPool.getCtClass("com.wurmonline.server.items.Item"), CtClass.shortType,
+										hookClassPool.getCtClass("com.wurmonline.server.behaviours.Action"),
+										CtClass.floatType });
+				ctMethodGroom.insertBefore("target.setSavedLastGroomed(target.getLastGroomed());");
+				ctMethodGroom.instrument(new ExprEditor() {
+					@Override
+					public void edit(MethodCall methodCall) throws CannotCompileException {
+						if (methodCall.getMethodName().equals("canBeGroomed")) {
+							methodCall.replace(
+									"if (target.canBeGroomed()) { target.setLastGroomedBy(0L); target.setGroomCount(0); $_ = true; } else { if ((target.getlastGroomedBy() == "
+											+ "performer.getWurmId()) && (target.getGroomCount() < "
+											+ groomActionsPerAnimal + ")) { $_ = true; } else { $_ = false; } }");
+						}
+					}
+				});
+				ctMethodGroom.insertAfter("if (target.getSavedLastGroomed() != target.getLastGroomed()) "
+						+ "{ target.setLastGroomedBy(performer.getWurmId()); target.setGroomCount(target.getGroomCount() + 1); }");
+
+				logger.log(Level.INFO,
+						"Up to " + groomActionsPerAnimal + " consecutive groom actions allowed per animal.");
+			} catch (NotFoundException | CannotCompileException e) {
+				logger.log(Level.WARNING, "Something went horribly wrong allowing multiple groom actions!", e);
 			}
 		}
 	}
